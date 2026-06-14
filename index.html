@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f12">
+<title>Weight Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0d0f12;
+    --surface:#16191f;
+    --surface-2:#1d212a;
+    --border:#262b35;
+    --text:#e8eaed;
+    --muted:#8b919c;
+    --accent:#4ade80;
+    --accent-dim:#22c55e;
+    --danger:#f87171;
+    --track:#262b35;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:"Noto Sans Thai",-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",sans-serif;
+    color:var(--text);
+    line-height:1.5;
+    padding:env(safe-area-inset-top) 16px calc(env(safe-area-inset-bottom) + 32px);
+    max-width:520px;
+    margin:0 auto;
+    -webkit-font-smoothing:antialiased;
+  }
+  h1{font-size:1.4rem;font-weight:700;letter-spacing:-.02em;}
+  h2{font-size:.95rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:14px;}
+  header{padding:28px 4px 20px;display:flex;align-items:center;justify-content:space-between;}
+  .header-sub{font-size:.8rem;color:var(--muted);margin-top:2px;}
+  .card{
+    background:var(--surface);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+  }
+
+  /* Progress */
+  .stat-row{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:16px;}
+  .big-num{font-size:2.6rem;font-weight:700;letter-spacing:-.03em;line-height:1;font-variant-numeric:tabular-nums;}
+  .big-num .unit{font-size:1rem;font-weight:500;color:var(--muted);margin-left:4px;}
+  .pct{font-size:1.1rem;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums;}
+  .bar{height:12px;background:var(--track);border-radius:999px;overflow:hidden;margin:6px 0 18px;}
+  .bar > div{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));border-radius:999px;transition:width .4s ease;}
+  .mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .mini{background:var(--surface-2);border-radius:12px;padding:12px 14px;}
+  .mini .label{font-size:.72rem;color:var(--muted);margin-bottom:4px;}
+  .mini .val{font-size:1.15rem;font-weight:700;font-variant-numeric:tabular-nums;}
+  .trend-note{margin-top:14px;font-size:.82rem;color:var(--muted);display:flex;flex-direction:column;gap:4px;}
+  .trend-note b{color:var(--text);font-weight:600;}
+
+  /* Goal edit */
+  .goal-edit{display:flex;align-items:center;gap:8px;}
+  .goal-edit label{font-size:.8rem;color:var(--muted);}
+  .goal-edit input{
+    width:72px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:10px;padding:7px 10px;font-size:.95rem;text-align:center;font-variant-numeric:tabular-nums;
+  }
+  input:focus{outline:2px solid var(--accent-dim);outline-offset:0;border-color:transparent;}
+
+  /* Log input */
+  .log-input{display:flex;gap:10px;}
+  .log-input input{
+    flex:1;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    border-radius:12px;padding:14px 16px;font-size:1.05rem;font-variant-numeric:tabular-nums;
+  }
+  .log-input input::placeholder{color:var(--muted);}
+  button{font-family:inherit;cursor:pointer;border:none;}
+  .btn-primary{
+    background:var(--accent);color:#06210f;font-weight:700;font-size:1rem;
+    border-radius:12px;padding:0 22px;white-space:nowrap;transition:filter .15s;
+  }
+  .btn-primary:active{filter:brightness(.9);}
+  .date-input{margin-top:10px;width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);border-radius:12px;padding:10px 14px;font-size:.85rem;font-family:inherit;}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;}
+  th{text-align:left;font-size:.72rem;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.05em;padding:0 0 10px;}
+  th.r,td.r{text-align:right;}
+  td{padding:12px 0;border-top:1px solid var(--border);font-size:.95rem;}
+  td.date{color:var(--muted);font-size:.88rem;}
+  td.weight{font-weight:600;}
+  .chg{font-weight:600;}
+  .chg.down{color:var(--accent);}
+  .chg.up{color:var(--danger);}
+  .chg.flat{color:var(--muted);}
+  .del{background:transparent;color:var(--muted);font-size:1.2rem;line-height:1;padding:4px 8px;border-radius:8px;}
+  .del:active{color:var(--danger);background:var(--surface-2);}
+  .empty{color:var(--muted);text-align:center;padding:28px 0;font-size:.9rem;}
+
+  /* Calorie plan */
+  .day-badge{display:inline-block;font-size:.72rem;font-weight:600;padding:4px 10px;border-radius:999px;background:var(--surface-2);color:var(--muted);margin-bottom:14px;}
+  .day-badge.today{background:rgba(74,222,128,.15);color:var(--accent);}
+  .meal{display:flex;justify-content:space-between;padding:11px 0;border-top:1px solid var(--border);font-size:.92rem;}
+  .meal:first-of-type{border-top:none;}
+  .meal .desc{color:var(--text);}
+  .meal .desc small{display:block;color:var(--muted);font-size:.78rem;margin-top:2px;}
+  .meal .cal{font-weight:600;color:var(--muted);font-variant-numeric:tabular-nums;white-space:nowrap;padding-left:12px;}
+  .total{display:flex;justify-content:space-between;padding:14px 0 0;margin-top:6px;border-top:2px solid var(--border);font-weight:700;}
+  .total .cal{color:var(--accent);}
+  .free-day{text-align:center;padding:26px 0;font-size:1.3rem;font-weight:700;}
+
+  /* Dashboard chart */
+  .dash-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .dash-head h2{margin-bottom:0;}
+  .seg{display:flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:3px;}
+  .seg button{
+    background:transparent;color:var(--muted);font-size:.78rem;font-weight:600;
+    padding:6px 10px;border-radius:7px;transition:background .15s,color .15s;
+  }
+  .seg button.active{background:var(--accent);color:#06210f;}
+  .chart-wrap{position:relative;width:100%;}
+  .chart-wrap svg{display:block;width:100%;height:auto;overflow:visible;}
+  .chart-line{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round;stroke-linecap:round;}
+  .chart-area{fill:url(#chartGrad);}
+  .chart-dot{fill:var(--accent);stroke:var(--surface);stroke-width:2;}
+  .chart-grid{stroke:var(--border);stroke-width:1;}
+  .chart-goal{stroke:var(--muted);stroke-width:1.5;stroke-dasharray:4 4;}
+  .chart-axis{fill:var(--muted);font-size:10px;font-variant-numeric:tabular-nums;}
+  .chart-goal-lbl{fill:var(--muted);font-size:9px;font-weight:600;}
+  .chart-stats{display:flex;gap:18px;margin-top:14px;}
+  .chart-stats .s .label{font-size:.7rem;color:var(--muted);}
+  .chart-stats .s .val{font-size:1rem;font-weight:700;font-variant-numeric:tabular-nums;}
+  .chart-stats .s .val.down{color:var(--accent);}
+  .chart-stats .s .val.up{color:var(--danger);}
+  .chart-empty{color:var(--muted);text-align:center;padding:40px 0;font-size:.9rem;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Weight Tracker</h1>
+    <div class="header-sub">เป้าหมายสุขภาพของคุณ</div>
+  </div>
+  <div class="goal-edit">
+    <label for="goal">Goal</label>
+    <input id="goal" type="number" inputmode="decimal" step="0.1" min="1">
+  </div>
+</header>
+
+<!-- Progress -->
+<section class="card">
+  <h2>Progress</h2>
+  <div class="stat-row">
+    <div class="big-num"><span id="currentWeight">–</span><span class="unit">kg</span></div>
+    <div class="pct" id="pct">0%</div>
+  </div>
+  <div class="bar"><div id="barFill" style="width:0%"></div></div>
+  <div class="mini-grid">
+    <div class="mini"><div class="label">ลดไปแล้ว</div><div class="val" id="lost">– kg</div></div>
+    <div class="mini"><div class="label">เหลืออีก</div><div class="val" id="remain">– kg</div></div>
+  </div>
+  <div class="trend-note" id="trend"></div>
+</section>
+
+<!-- Dashboard -->
+<section class="card">
+  <div class="dash-head">
+    <h2>Dashboard</h2>
+    <div class="seg" id="rangeSeg">
+      <button data-range="7">7 วัน</button>
+      <button data-range="30">30 วัน</button>
+      <button data-range="90">90 วัน</button>
+      <button data-range="0" class="active">ทั้งหมด</button>
+    </div>
+  </div>
+  <div id="chartArea"></div>
+</section>
+
+<!-- Daily Log -->
+<section class="card">
+  <h2>บันทึกน้ำหนัก</h2>
+  <div class="log-input">
+    <input id="weightInput" type="number" inputmode="decimal" step="0.1" min="1" placeholder="น้ำหนัก (kg)">
+    <button class="btn-primary" id="addBtn">บันทึก</button>
+  </div>
+  <input id="dateInput" class="date-input" type="date">
+</section>
+
+<!-- Log table -->
+<section class="card">
+  <h2>ประวัติ</h2>
+  <div id="logArea"></div>
+</section>
+
+<!-- Calorie Plan -->
+<section class="card">
+  <h2>Calorie Plan</h2>
+  <div id="dayBadge" class="day-badge">วันธรรมดา</div>
+  <div id="weekdayPlan">
+    <div class="meal"><div class="desc">เช้า<small>ไข่ 1 ฟอง + ขนมปังโฮลวีทแผ่นใหญ่</small></div><div class="cal">190 cal</div></div>
+    <div class="meal"><div class="desc">กลางวัน<small>อาหารปกติ</small></div><div class="cal">700 cal</div></div>
+    <div class="meal"><div class="desc">เย็น<small>อกไก่ 300g + ผลไม้ 300g</small></div><div class="cal">480 cal</div></div>
+    <div class="total"><div>รวม</div><div class="cal">~1,370 cal/วัน</div></div>
+  </div>
+  <div id="freeDayPlan" class="free-day hidden">🎉 Free Day</div>
+</section>
+
+<script>
+(function(){
+  "use strict";
+  var LS_LOG="wt_log", LS_GOAL="wt_goal";
+  var DEFAULT_GOAL=70, DEFAULT_START=77;
+  var currentRange=0; // 0 = all, else days
+
+  var goalInput=document.getElementById("goal");
+  var weightInput=document.getElementById("weightInput");
+  var dateInput=document.getElementById("dateInput");
+  var addBtn=document.getElementById("addBtn");
+
+  // ---------- storage ----------
+  function loadLog(){
+    try{ var d=JSON.parse(localStorage.getItem(LS_LOG)); return Array.isArray(d)?d:[]; }
+    catch(e){ return []; }
+  }
+  function saveLog(log){ localStorage.setItem(LS_LOG, JSON.stringify(log)); }
+  function loadGoal(){
+    var g=parseFloat(localStorage.getItem(LS_GOAL));
+    return isFinite(g)&&g>0 ? g : DEFAULT_GOAL;
+  }
+  function saveGoal(g){ localStorage.setItem(LS_GOAL, String(g)); }
+
+  // ---------- helpers ----------
+  function todayISO(){
+    var d=new Date(), tz=d.getTimezoneOffset()*60000;
+    return new Date(d-tz).toISOString().slice(0,10);
+  }
+  function fmtDate(iso){
+    var p=iso.split("-");
+    return p[2]+"/"+p[1]+"/"+p[0].slice(2);
+  }
+  function round1(n){ return Math.round(n*10)/10; }
+  // sorted ascending by date
+  function sortedAsc(log){ return log.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; }); }
+
+  // ---------- render progress ----------
+  function renderProgress(log, goal){
+    var asc=sortedAsc(log);
+    var currentEl=document.getElementById("currentWeight");
+    var pctEl=document.getElementById("pct");
+    var barEl=document.getElementById("barFill");
+    var lostEl=document.getElementById("lost");
+    var remainEl=document.getElementById("remain");
+    var trendEl=document.getElementById("trend");
+
+    if(asc.length===0){
+      currentEl.textContent="–";
+      pctEl.textContent="0%";
+      barEl.style.width="0%";
+      lostEl.textContent="– kg";
+      remainEl.textContent="– kg";
+      trendEl.innerHTML="<span>ยังไม่มีข้อมูล — เริ่มบันทึกน้ำหนักวันนี้</span>";
+      return;
+    }
+
+    var start=asc[0].weight;            // earliest recorded entry
+    var current=asc[asc.length-1].weight;
+    currentEl.textContent=round1(current);
+
+    var totalToLose=start-goal;
+    var lost=start-current;
+    var remain=current-goal;
+
+    // percent toward goal
+    var pct;
+    if(totalToLose<=0){ pct = current<=goal?100:0; }
+    else { pct=(lost/totalToLose)*100; }
+    pct=Math.max(0,Math.min(100,pct));
+    pctEl.textContent=Math.round(pct)+"%";
+    barEl.style.width=pct+"%";
+
+    lostEl.textContent=round1(lost)+" kg";
+    remainEl.textContent=(remain<=0?"ถึงแล้ว 🎉":round1(remain)+" kg");
+
+    // trend: avg loss per week from last 14 days
+    renderTrend(asc, goal, current, trendEl);
+  }
+
+  function renderTrend(asc, goal, current, trendEl){
+    var lines=[];
+    if(current<=goal){
+      trendEl.innerHTML="<span>🎉 <b>ถึงเป้าหมายแล้ว!</b> ยินดีด้วยครับ</span>";
+      return;
+    }
+    // window: entries within last 14 days of most recent entry
+    var lastDate=new Date(asc[asc.length-1].date);
+    var cutoff=new Date(lastDate); cutoff.setDate(cutoff.getDate()-14);
+    var win=asc.filter(function(e){ return new Date(e.date)>=cutoff; });
+
+    if(win.length>=2){
+      var first=win[0], last=win[win.length-1];
+      var days=(new Date(last.date)-new Date(first.date))/86400000;
+      var diff=first.weight-last.weight; // positive = lost
+      if(days>0){
+        var perWeek=(diff/days)*7;
+        if(perWeek>0.01){
+          lines.push("เฉลี่ย <b>"+round1(perWeek)+" kg/สัปดาห์</b> (2 สัปดาห์ล่าสุด)");
+          var remain=current-goal;
+          var weeksLeft=remain/perWeek;
+          var eta=new Date(last.date);
+          eta.setDate(eta.getDate()+Math.ceil(weeksLeft*7));
+          var etaStr=eta.toLocaleDateString("th-TH",{day:"numeric",month:"short",year:"numeric"});
+          lines.push("คาดถึงเป้า <b>"+etaStr+"</b> (อีก ~"+Math.ceil(weeksLeft)+" สัปดาห์)");
+        } else {
+          lines.push("น้ำหนัก<b>ทรงตัวหรือเพิ่มขึ้น</b>ในช่วง 2 สัปดาห์ล่าสุด");
+        }
+      } else {
+        lines.push("บันทึกหลายวันเพื่อดูแนวโน้มการลดต่อสัปดาห์");
+      }
+    } else {
+      lines.push("บันทึกอย่างน้อย 2 ครั้งใน 2 สัปดาห์เพื่อดูแนวโน้ม");
+    }
+    trendEl.innerHTML=lines.map(function(l){return "<span>"+l+"</span>";}).join("");
+  }
+
+  // ---------- dashboard chart ----------
+  function renderChart(log, goal){
+    var area=document.getElementById("chartArea");
+    var asc=sortedAsc(log);
+
+    // filter by timeframe relative to latest entry
+    if(currentRange>0 && asc.length){
+      var last=new Date(asc[asc.length-1].date);
+      var cut=new Date(last); cut.setDate(cut.getDate()-(currentRange-1));
+      asc=asc.filter(function(e){ return new Date(e.date)>=cut; });
+    }
+
+    if(asc.length===0){
+      area.innerHTML='<div class="chart-empty">ยังไม่มีข้อมูลในช่วงนี้</div>';
+      return;
+    }
+    if(asc.length===1){
+      area.innerHTML='<div class="chart-empty">มีข้อมูล 1 จุด ('+round1(asc[0].weight)+' kg) — บันทึกเพิ่มเพื่อดูกราฟแนวโน้ม</div>';
+      return;
+    }
+
+    var W=600, H=240, padL=34, padR=14, padT=14, padB=26;
+    var iw=W-padL-padR, ih=H-padT-padB;
+
+    var weights=asc.map(function(e){return e.weight;});
+    var minW=Math.min.apply(null,weights), maxW=Math.max.apply(null,weights);
+    // include goal line in range if reasonably close
+    var lo=Math.min(minW,goal), hi=Math.max(maxW,goal);
+    var span=hi-lo || 1;
+    var pad=span*0.15;
+    lo-=pad; hi+=pad;
+    span=hi-lo;
+
+    var t0=new Date(asc[0].date).getTime();
+    var t1=new Date(asc[asc.length-1].date).getTime();
+    var tspan=(t1-t0)||1;
+
+    function x(d){ return padL + ((new Date(d.date).getTime()-t0)/tspan)*iw; }
+    function y(w){ return padT + (1-(w-lo)/span)*ih; }
+
+    var pts=asc.map(function(e){ return x(e)+","+y(e.weight); });
+    var linePath="M"+pts.join("L");
+    var areaPath="M"+x(asc[0])+","+(padT+ih)+"L"+pts.join("L")+"L"+x(asc[asc.length-1])+","+(padT+ih)+"Z";
+
+    // y-axis ticks (3)
+    var ticks="";
+    for(var i=0;i<=2;i++){
+      var tv=lo+(span*i/2), ty=y(tv);
+      ticks+='<line class="chart-grid" x1="'+padL+'" y1="'+ty+'" x2="'+(W-padR)+'" y2="'+ty+'"/>';
+      ticks+='<text class="chart-axis" x="'+(padL-6)+'" y="'+(ty+3)+'" text-anchor="end">'+round1(tv)+'</text>';
+    }
+
+    // goal line (only if within view)
+    var goalEl="";
+    if(goal>=lo && goal<=hi){
+      var gy=y(goal);
+      goalEl='<line class="chart-goal" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>'+
+             '<text class="chart-goal-lbl" x="'+(W-padR)+'" y="'+(gy-4)+'" text-anchor="end">เป้า '+round1(goal)+'</text>';
+    }
+
+    // x labels: first & last date
+    var xl='<text class="chart-axis" x="'+padL+'" y="'+(H-6)+'" text-anchor="start">'+fmtDate(asc[0].date)+'</text>'+
+           '<text class="chart-axis" x="'+(W-padR)+'" y="'+(H-6)+'" text-anchor="end">'+fmtDate(asc[asc.length-1].date)+'</text>';
+
+    // endpoint dot
+    var lastE=asc[asc.length-1];
+    var dot='<circle class="chart-dot" cx="'+x(lastE)+'" cy="'+y(lastE.weight)+'" r="4.5"/>';
+
+    var svg='<div class="chart-wrap"><svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="กราฟน้ำหนัก">'+
+      '<defs><linearGradient id="chartGrad" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22"/>'+
+        '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/>'+
+      '</linearGradient></defs>'+
+      ticks+goalEl+
+      '<path class="chart-area" d="'+areaPath+'"/>'+
+      '<path class="chart-line" d="'+linePath+'"/>'+
+      dot+xl+
+    '</svg></div>';
+
+    // stats for window
+    var diff=round1(asc[asc.length-1].weight-asc[0].weight);
+    var cls=diff<0?"down":diff>0?"up":"";
+    var sign=diff>0?"+":"";
+    svg+='<div class="chart-stats">'+
+      '<div class="s"><div class="label">จุดข้อมูล</div><div class="val">'+asc.length+'</div></div>'+
+      '<div class="s"><div class="label">เปลี่ยนแปลงช่วงนี้</div><div class="val '+cls+'">'+sign+diff+' kg</div></div>'+
+      '<div class="s"><div class="label">สูงสุด / ต่ำสุด</div><div class="val">'+round1(maxW)+' / '+round1(minW)+'</div></div>'+
+    '</div>';
+
+    area.innerHTML=svg;
+  }
+
+  // ---------- render log table ----------
+  function renderLog(log){
+    var area=document.getElementById("logArea");
+    if(log.length===0){
+      area.innerHTML='<div class="empty">ยังไม่มีรายการบันทึก</div>';
+      return;
+    }
+    var asc=sortedAsc(log);
+    // map date -> change vs previous chronological entry
+    var changeById={};
+    for(var i=0;i<asc.length;i++){
+      changeById[asc[i].id]= i===0 ? null : round1(asc[i].weight-asc[i-1].weight);
+    }
+    var desc=asc.slice().reverse();
+    var rows=desc.map(function(e){
+      var ch=changeById[e.id];
+      var chHtml;
+      if(ch===null){ chHtml='<span class="chg flat">–</span>'; }
+      else if(ch<0){ chHtml='<span class="chg down">▼ '+Math.abs(ch)+'</span>'; }
+      else if(ch>0){ chHtml='<span class="chg up">▲ '+ch+'</span>'; }
+      else { chHtml='<span class="chg flat">0</span>'; }
+      return '<tr>'+
+        '<td class="date">'+fmtDate(e.date)+'</td>'+
+        '<td class="weight">'+round1(e.weight)+'</td>'+
+        '<td class="r">'+chHtml+'</td>'+
+        '<td class="r"><button class="del" data-id="'+e.id+'" aria-label="ลบ">✕</button></td>'+
+      '</tr>';
+    }).join("");
+    area.innerHTML=
+      '<table><thead><tr>'+
+        '<th>วันที่</th><th>น้ำหนัก</th><th class="r">เปลี่ยนแปลง</th><th></th>'+
+      '</tr></thead><tbody>'+rows+'</tbody></table>';
+
+    Array.prototype.forEach.call(area.querySelectorAll(".del"),function(btn){
+      btn.addEventListener("click",function(){ deleteEntry(btn.getAttribute("data-id")); });
+    });
+  }
+
+  // ---------- calorie plan (by today's weekday) ----------
+  function renderPlan(){
+    var dow=new Date().getDay(); // 0=Sun..6=Sat
+    var isWeekend=(dow===0||dow===6);
+    var names=["อาทิตย์","จันทร์","อังคาร","พุธ","พฤหัสบดี","ศุกร์","เสาร์"];
+    var badge=document.getElementById("dayBadge");
+    badge.textContent="วันนี้: "+names[dow];
+    badge.classList.add("today");
+    document.getElementById("weekdayPlan").classList.toggle("hidden",isWeekend);
+    document.getElementById("freeDayPlan").classList.toggle("hidden",!isWeekend);
+  }
+
+  // ---------- actions ----------
+  function addEntry(){
+    var w=parseFloat(weightInput.value);
+    if(!isFinite(w)||w<=0){ weightInput.focus(); return; }
+    var date=dateInput.value||todayISO();
+    var log=loadLog();
+    // one entry per date — replace if exists
+    var existing=log.filter(function(e){return e.date===date;})[0];
+    if(existing){ existing.weight=w; }
+    else { log.push({id:String(Date.now())+Math.random().toString(36).slice(2,6),date:date,weight:w}); }
+    saveLog(log);
+    weightInput.value="";
+    renderAll();
+  }
+
+  function deleteEntry(id){
+    var log=loadLog().filter(function(e){return e.id!==id;});
+    saveLog(log);
+    renderAll();
+  }
+
+  function renderAll(){
+    var log=loadLog();
+    var goal=loadGoal();
+    renderProgress(log,goal);
+    renderChart(log,goal);
+    renderLog(log);
+  }
+
+  // ---------- init ----------
+  function init(){
+    goalInput.value=loadGoal();
+    dateInput.value=todayISO();
+    dateInput.max=todayISO();
+
+    addBtn.addEventListener("click",addEntry);
+    weightInput.addEventListener("keydown",function(e){ if(e.key==="Enter") addEntry(); });
+    goalInput.addEventListener("change",function(){
+      var g=parseFloat(goalInput.value);
+      if(isFinite(g)&&g>0){ saveGoal(g); } else { goalInput.value=loadGoal(); }
+      renderAll();
+    });
+
+    var seg=document.getElementById("rangeSeg");
+    seg.addEventListener("click",function(e){
+      var btn=e.target.closest("button[data-range]");
+      if(!btn) return;
+      currentRange=parseInt(btn.getAttribute("data-range"),10)||0;
+      Array.prototype.forEach.call(seg.children,function(b){ b.classList.remove("active"); });
+      btn.classList.add("active");
+      renderChart(loadLog(),loadGoal());
+    });
+
+    renderPlan();
+    renderAll();
+  }
+  init();
+})();
+</script>
+</body>
+</html>
