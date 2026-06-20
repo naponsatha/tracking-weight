@@ -295,7 +295,8 @@
     var p=iso.split("-");
     return p[2]+"/"+p[1]+"/"+p[0].slice(2);
   }
-  function round1(n){ return Math.round(n*10)/10; }
+  function round2(n){ return Math.round(n*100)/100; }
+  function fmt2(n){ return round2(n).toFixed(2); } // weight display: 2 decimals
   // sorted ascending by date
   function sortedAsc(log){ return log.slice().sort(function(a,b){ return a.date<b.date?-1:a.date>b.date?1:0; }); }
 
@@ -321,7 +322,7 @@
 
     var start=asc[0].weight;            // earliest recorded entry
     var current=asc[asc.length-1].weight;
-    currentEl.textContent=round1(current);
+    currentEl.textContent=fmt2(current);
 
     var totalToLose=start-goal;
     var lost=start-current;
@@ -335,8 +336,8 @@
     pctEl.textContent=Math.round(pct)+"%";
     barEl.style.width=pct+"%";
 
-    lostEl.textContent=round1(lost)+" kg";
-    remainEl.textContent=(remain<=0?"ถึงแล้ว 🎉":round1(remain)+" kg");
+    lostEl.textContent=fmt2(lost)+" kg";
+    remainEl.textContent=(remain<=0?"ถึงแล้ว 🎉":fmt2(remain)+" kg");
 
     // trend: avg loss per week from last 14 days
     renderTrend(asc, goal, current, trendEl);
@@ -360,7 +361,7 @@
       if(days>0){
         var perWeek=(diff/days)*7;
         if(perWeek>0.01){
-          lines.push("เฉลี่ย <b>"+round1(perWeek)+" kg/สัปดาห์</b> (2 สัปดาห์ล่าสุด)");
+          lines.push("เฉลี่ย <b>"+fmt2(perWeek)+" kg/สัปดาห์</b> (2 สัปดาห์ล่าสุด)");
           var remain=current-goal;
           var weeksLeft=remain/perWeek;
           var eta=new Date(last.date);
@@ -396,11 +397,11 @@
       return;
     }
     if(asc.length===1){
-      area.innerHTML='<div class="chart-empty">มีข้อมูล 1 จุด ('+round1(asc[0].weight)+' kg) — บันทึกเพิ่มเพื่อดูกราฟแนวโน้ม</div>';
+      area.innerHTML='<div class="chart-empty">มีข้อมูล 1 จุด ('+fmt2(asc[0].weight)+' kg) — บันทึกเพิ่มเพื่อดูกราฟแนวโน้ม</div>';
       return;
     }
 
-    var W=600, H=240, padL=34, padR=14, padT=14, padB=26;
+    var W=600, H=240, padL=46, padR=14, padT=14, padB=26;
     var iw=W-padL-padR, ih=H-padT-padB;
 
     var weights=asc.map(function(e){return e.weight;});
@@ -428,7 +429,7 @@
     for(var i=0;i<=2;i++){
       var tv=lo+(span*i/2), ty=y(tv);
       ticks+='<line class="chart-grid" x1="'+padL+'" y1="'+ty+'" x2="'+(W-padR)+'" y2="'+ty+'"/>';
-      ticks+='<text class="chart-axis" x="'+(padL-6)+'" y="'+(ty+3)+'" text-anchor="end">'+round1(tv)+'</text>';
+      ticks+='<text class="chart-axis" x="'+(padL-6)+'" y="'+(ty+3)+'" text-anchor="end">'+fmt2(tv)+'</text>';
     }
 
     // goal line (only if within view)
@@ -436,7 +437,7 @@
     if(goal>=lo && goal<=hi){
       var gy=y(goal);
       goalEl='<line class="chart-goal" x1="'+padL+'" y1="'+gy+'" x2="'+(W-padR)+'" y2="'+gy+'"/>'+
-             '<text class="chart-goal-lbl" x="'+(W-padR)+'" y="'+(gy-4)+'" text-anchor="end">เป้า '+round1(goal)+'</text>';
+             '<text class="chart-goal-lbl" x="'+(W-padR)+'" y="'+(gy-4)+'" text-anchor="end">เป้า '+fmt2(goal)+'</text>';
     }
 
     // x labels: first & last date
@@ -459,13 +460,13 @@
     '</svg></div>';
 
     // stats for window
-    var diff=round1(asc[asc.length-1].weight-asc[0].weight);
+    var diff=round2(asc[asc.length-1].weight-asc[0].weight);
     var cls=diff<0?"down":diff>0?"up":"";
     var sign=diff>0?"+":"";
     svg+='<div class="chart-stats">'+
       '<div class="s"><div class="label">จุดข้อมูล</div><div class="val">'+asc.length+'</div></div>'+
-      '<div class="s"><div class="label">เปลี่ยนแปลงช่วงนี้</div><div class="val '+cls+'">'+sign+diff+' kg</div></div>'+
-      '<div class="s"><div class="label">สูงสุด / ต่ำสุด</div><div class="val">'+round1(maxW)+' / '+round1(minW)+'</div></div>'+
+      '<div class="s"><div class="label">เปลี่ยนแปลงช่วงนี้</div><div class="val '+cls+'">'+sign+fmt2(diff)+' kg</div></div>'+
+      '<div class="s"><div class="label">สูงสุด / ต่ำสุด</div><div class="val">'+fmt2(maxW)+' / '+fmt2(minW)+'</div></div>'+
     '</div>';
 
     area.innerHTML=svg;
@@ -482,19 +483,19 @@
     // map date -> change vs previous chronological entry
     var changeById={};
     for(var i=0;i<asc.length;i++){
-      changeById[asc[i].id]= i===0 ? null : round1(asc[i].weight-asc[i-1].weight);
+      changeById[asc[i].id]= i===0 ? null : round2(asc[i].weight-asc[i-1].weight);
     }
     var desc=asc.slice().reverse();
     var rows=desc.map(function(e){
       var ch=changeById[e.id];
       var chHtml;
       if(ch===null){ chHtml='<span class="chg flat">–</span>'; }
-      else if(ch<0){ chHtml='<span class="chg down">▼ '+Math.abs(ch)+'</span>'; }
-      else if(ch>0){ chHtml='<span class="chg up">▲ '+ch+'</span>'; }
-      else { chHtml='<span class="chg flat">0</span>'; }
+      else if(ch<0){ chHtml='<span class="chg down">▼ '+fmt2(Math.abs(ch))+'</span>'; }
+      else if(ch>0){ chHtml='<span class="chg up">▲ '+fmt2(ch)+'</span>'; }
+      else { chHtml='<span class="chg flat">0.00</span>'; }
       return '<tr>'+
         '<td class="date">'+fmtDate(e.date)+'</td>'+
-        '<td class="weight">'+round1(e.weight)+'</td>'+
+        '<td class="weight">'+fmt2(e.weight)+'</td>'+
         '<td class="r">'+chHtml+'</td>'+
         '<td class="r"><button class="del" data-id="'+e.id+'" aria-label="ลบ">✕</button></td>'+
       '</tr>';
@@ -541,7 +542,7 @@
 
     var blocks=
       '<div class="calc-block">'+
-        '<div class="label">บริโภคสูงสุด/วัน<br>(คงน้ำหนัก '+round1(weight)+' kg)</div>'+
+        '<div class="label">บริโภคสูงสุด/วัน<br>(คงน้ำหนัก '+fmt2(weight)+' kg)</div>'+
         '<div class="num">'+fmtCal(tdee)+'<span>kcal</span></div>'+
         '<div class="sub">เกินกว่านี้ = น้ำหนักขึ้น<br>BMR '+fmtCal(bmr)+' kcal</div>'+
       '</div>';
@@ -557,9 +558,9 @@
 
       blocks+=
         '<div class="calc-block accent">'+
-          '<div class="label">เพื่อลดสู่เป้า '+round1(goal)+' kg<br>ไม่ควรเกิน</div>'+
+          '<div class="label">เพื่อลดสู่เป้า '+fmt2(goal)+' kg<br>ไม่ควรเกิน</div>'+
           '<div class="num">'+fmtCal(target)+'<span>kcal</span></div>'+
-          '<div class="sub">deficit '+fmtCal(realDeficit)+' kcal/วัน<br>~'+round1(perWeek)+' kg/สัปดาห์'+
+          '<div class="sub">deficit '+fmtCal(realDeficit)+' kcal/วัน<br>~'+fmt2(perWeek)+' kg/สัปดาห์'+
             (weeksLeft>0?' · ถึงเป้าใน ~'+Math.ceil(weeksLeft)+' สัปดาห์':'')+'</div>'+
         '</div>';
 
@@ -580,7 +581,7 @@
         '<div class="calc-block accent">'+
           '<div class="label">ถึงเป้าแล้ว 🎉<br>กินคงที่ได้ถึง</div>'+
           '<div class="num">'+fmtCal(tdee)+'<span>kcal</span></div>'+
-          '<div class="sub">เพื่อรักษาน้ำหนัก '+round1(weight)+' kg</div>'+
+          '<div class="sub">เพื่อรักษาน้ำหนัก '+fmt2(weight)+' kg</div>'+
         '</div>';
     }
 
